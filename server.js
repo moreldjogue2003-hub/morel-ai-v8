@@ -37,8 +37,8 @@ app.get("/api/health", (_req, res) => {
 /*
  * Hedra Character 3 v3 proxy.
  * The secret is read only from the hosting environment.
- * Media upload and job polling will be added after confirming
- * the exact Hedra v3 asset workflow for this API key.
+ * The caller must provide Hedra-compatible start_image and audio
+ * inputs. The API key is read only from the hosting environment.
  */
 app.post("/api/hedra/generate", async (req, res) => {
   if (!process.env.HEDRA_API_KEY) {
@@ -57,11 +57,28 @@ app.post("/api/hedra/generate", async (req, res) => {
   const allowedRatios = ["1:1", "4:3", "3:4", "16:9", "9:16", "9:21", "21:9"];
   const allowedResolutions = ["540p", "720p", "1080p"];
 
-  if (input.aspect_ratio && !allowedRatios.includes(input.aspect_ratio)) {
+  const requiredFields = ["prompt", "aspect_ratio", "resolution", "start_image", "audio"];
+  const missingFields = requiredFields.filter(
+    field => input[field] === undefined || input[field] === null || input[field] === ""
+  );
+  if (missingFields.length) {
+    return res.status(400).json({
+      error: "Missing required Hedra Character 3 input fields.",
+      missing: missingFields
+    });
+  }
+
+  if (!allowedRatios.includes(input.aspect_ratio)) {
     return res.status(400).json({ error: "Unsupported aspect_ratio." });
   }
-  if (input.resolution && !allowedResolutions.includes(input.resolution)) {
+  if (!allowedResolutions.includes(input.resolution)) {
     return res.status(400).json({ error: "Unsupported resolution." });
+  }
+  if (typeof input.prompt !== "string" || input.prompt.trim().length === 0) {
+    return res.status(400).json({ error: "prompt must be a non-empty string." });
+  }
+  if (!(typeof input.audio === "string" || (Array.isArray(input.audio) && input.audio.length > 0))) {
+    return res.status(400).json({ error: "audio must be an audio reference or a non-empty list of references." });
   }
 
   try {
