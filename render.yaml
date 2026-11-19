@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: morel-ai-v8
+    runtime: node
+    plan: free
+    region: oregon
+    buildCommand: npm install
+    startCommand: npm start
+    autoDeploy: true
+    envVars:
+      - key: HEDRA_API_KEY
+        sync: false
