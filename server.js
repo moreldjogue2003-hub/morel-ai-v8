@@ -8,8 +8,26 @@ const app = express();
 const PORT = Number(process.env.PORT || 3000);
 
 app.disable("x-powered-by");
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "blob:"],
+      mediaSrc: ["'self'", "blob:"],
+      connectSrc: ["'self'"],
+      fontSrc: ["'self'", "data:"],
+      objectSrc: ["'none'"],
+      baseUri: ["'self'"],
+      frameAncestors: ["'none'"]
+    }
+  }
+}));
 app.use(express.json({ limit: "1mb" }));
+
+// Serve the MOREL AI V8 web interface without exposing backend files.
+app.use(express.static("public", { index: "index.html" }));
 
 const allowedOrigin = process.env.APP_ORIGIN;
 app.use(cors({
